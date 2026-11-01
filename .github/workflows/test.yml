@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # The composite action's audit step needs a real model (a secret key or a
+  # self-hosted Ollama), so this smoke test verifies the part that can run on a
+  # hosted runner with no secrets: that glassbox installs from git exactly as the
+  # action does, and the CLI works.
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install glassbox the way the action does
+        run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@main"
+      - name: CLI runs
+        run: |
+          glassbox --version
+          glassbox demo
+          glassbox audit --demo || test $? -eq 1
+          glassbox audit --demo --json > audit.json || test $? -eq 1
+          python -c "import json; json.load(open('audit.json'))"

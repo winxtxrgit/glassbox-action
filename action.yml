@@ -1,0 +1,67 @@
+name: "Glassbox Audit"
+description: "Audit an LLM verdict for faithfulness — catch hallucinated evidence in CI."
+author: "Thanut Jongteerathanachote"
+branding:
+  icon: "search"
+  color: "purple"
+
+inputs:
+  file:
+    description: "Path to the document to audit."
+    required: true
+  backend:
+    description: "Where the model runs: ollama | openrouter | groq."
+    required: false
+    default: "openrouter"
+  model:
+    description: "Model name (e.g. qwen2.5:3b). Empty = the backend's default."
+    required: false
+    default: ""
+  glassbox-ref:
+    description: "glassbox git ref to install (until glassbox is on PyPI)."
+    required: false
+    default: "main"
+  python-version:
+    description: "Python version to set up."
+    required: false
+    default: "3.12"
+
+outputs:
+  trustworthy:
+    description: "true if the verdict passed grounding + faithfulness + consistency."
+    value: ${{ steps.audit.outputs.trustworthy }}
+  report:
+    description: "The full JSON audit report."
+    value: ${{ steps.audit.outputs.report }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install glassbox
+      shell: bash
+      # Until glassbox is on PyPI, install from the repo. Afterwards this becomes
+      # `pip install "glassbox==<version>"`.
+      run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@${{ inputs.glassbox-ref }}"
+
+    - name: Audit
+      id: audit
+      shell: bash
+      run: |
+        set +e
+        model_arg=""
+        if [ -n "${{ inputs.model }}" ]; then model_arg="--model ${{ inputs.model }}"; fi
+        report=$(glassbox audit "${{ inputs.file }}" --backend "${{ inputs.backend }}" $model_arg --json)
+        code=$?
+        {
+          echo "report<<GLASSBOX_EOF"
+          echo "$report"
+          echo "GLASSBOX_EOF"
+        } >> "$GITHUB_OUTPUT"
+        trust=$(echo "$report" | python -c "import sys,json; print(str(json.load(sys.stdin).get('trustworthy', False)).lower())" 2>/dev/null || echo "false")
+        echo "trustworthy=$trust" >> "$GITHUB_OUTPUT"
+        exit $code
