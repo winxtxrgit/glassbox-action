@@ -18,9 +18,9 @@ inputs:
     required: false
     default: ""
   glassbox-ref:
-    description: "glassbox git ref to install (until glassbox is on PyPI)."
+    description: "glassbox git ref to install: a tag, branch or commit SHA. Pinned to a tested release so a change on glassbox main can't break your CI."
     required: false
-    default: "main"
+    default: "v0.7.0"
   python-version:
     description: "Python version to set up."
     required: false
@@ -44,8 +44,8 @@ runs:
 
     - name: Install glassbox
       shell: bash
-      # Until glassbox is on PyPI, install from the repo. Afterwards this becomes
-      # `pip install "glassbox==<version>"`.
+      # glassbox isn't on PyPI (the name there belongs to an unrelated project),
+      # so install it from the repo at the pinned ref.
       run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@${{ inputs.glassbox-ref }}"
 
     - name: Audit

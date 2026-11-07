@@ -13,6 +13,7 @@ jobs:
   # self-hosted Ollama), so this smoke test verifies the part that can run on a
   # hosted runner with no secrets: that glassbox installs from git exactly as the
   # action does, and the CLI works.
+  # Keep the ref here in step with the `glassbox-ref` default in action.yml.
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -21,7 +22,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install glassbox the way the action does
-        run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@main"
+        run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@v0.7.0"
       - name: CLI runs
         run: |
           glassbox --version
