@@ -17,10 +17,14 @@ inputs:
     description: "Model name (e.g. qwen2.5:3b). Empty = the backend's default."
     required: false
     default: ""
-  glassbox-ref:
-    description: "glassbox git ref to install: a tag, branch or commit SHA. Pinned to a tested release so a change on glassbox main can't break your CI."
+  glassbox-version:
+    description: "glassbox-audit version to install from PyPI. Pinned to a tested release so a new glassbox release can't break your CI."
     required: false
-    default: "v0.7.0"
+    default: "0.8.0"
+  glassbox-ref:
+    description: "Install glassbox from this git ref (tag, branch or commit SHA) instead of PyPI, e.g. main. Empty = use glassbox-version."
+    required: false
+    default: ""
   python-version:
     description: "Python version to set up."
     required: false
@@ -44,9 +48,18 @@ runs:
 
     - name: Install glassbox
       shell: bash
-      # glassbox isn't on PyPI (the name there belongs to an unrelated project),
-      # so install it from the repo at the pinned ref.
-      run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@${{ inputs.glassbox-ref }}"
+      # On PyPI glassbox is "glassbox-audit" ("glassbox" there is an unrelated
+      # project). Inputs go through env so they're never parsed as shell code.
+      env:
+        GLASSBOX_VERSION: ${{ inputs.glassbox-version }}
+        GLASSBOX_REF: ${{ inputs.glassbox-ref }}
+      run: |
+        if [ -n "$GLASSBOX_REF" ]; then
+          # No package name in the URL: tags before v0.8.0 are named "glassbox".
+          pip install "git+https://github.com/winxtxrgit/glassbox@$GLASSBOX_REF"
+        else
+          pip install "glassbox-audit==$GLASSBOX_VERSION"
+        fi
 
     - name: Audit
       id: audit
