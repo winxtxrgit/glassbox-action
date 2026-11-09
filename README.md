@@ -54,7 +54,8 @@ actually depend on what it quoted, the step fails and the PR is blocked.
 | `file` | — (required) | Document to audit. |
 | `backend` | `openrouter` | `ollama`, `openrouter`, or `groq`. The API backends read `<PROVIDER>_API_KEY` from the environment. |
 | `model` | backend default | Model name, e.g. `qwen2.5:3b`. |
-| `glassbox-ref` | `v0.7.0` | glassbox git ref to install (tag, branch or SHA). Pinned to a tested release; set `main` to track the latest. |
+| `glassbox-version` | `0.8.0` | [`glassbox-audit`](https://pypi.org/project/glassbox-audit/) version to install from PyPI. Pinned to a tested release. |
+| `glassbox-ref` | — | Install from this glassbox git ref (tag, branch or SHA) instead of PyPI, e.g. `main` to track the latest. |
 | `python-version` | `3.12` | Python to set up. |
 
 ## Outputs

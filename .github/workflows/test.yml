@@ -11,18 +11,32 @@ permissions:
 jobs:
   # The composite action's audit step needs a real model (a secret key or a
   # self-hosted Ollama), so this smoke test verifies the part that can run on a
-  # hosted runner with no secrets: that glassbox installs from git exactly as the
-  # action does, and the CLI works.
-  # Keep the ref here in step with the `glassbox-ref` default in action.yml.
+  # hosted runner with no secrets: that glassbox installs exactly as the action
+  # does (from PyPI by default, or from a git ref), and the CLI works.
+  # Keep the PyPI version here in step with the `glassbox-version` default in
+  # action.yml.
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - pypi
+          - git-main
+          - git-v0.7.0 # a tag from before the PyPI rename
     steps:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install glassbox the way the action does
-        run: pip install "glassbox @ git+https://github.com/winxtxrgit/glassbox@v0.7.0"
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          case "$SOURCE" in
+            pypi) pip install "glassbox-audit==0.8.0" ;;
+            git-*) pip install "git+https://github.com/winxtxrgit/glassbox@${SOURCE#git-}" ;;
+          esac
       - name: CLI runs
         run: |
           glassbox --version
