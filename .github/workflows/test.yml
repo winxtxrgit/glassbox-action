@@ -44,3 +44,24 @@ jobs:
           glassbox audit --demo || test $? -eq 1
           glassbox audit --demo --json > audit.json || test $? -eq 1
           python -c "import json; json.load(open('audit.json'))"
+
+  # Runs the action itself with inputs that would execute as shell code if they
+  # were pasted into the script. There's no model here, so the audit is expected
+  # to fail; the check is that the marker files never get created.
+  injection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the action with hostile inputs
+        id: run
+        continue-on-error: true
+        uses: ./
+        with:
+          file: "doc$(touch /tmp/pwned-file).txt"
+          model: "x$(touch /tmp/pwned-model)"
+      - name: Inputs were not executed
+        run: |
+          test ! -e /tmp/pwned-file
+          test ! -e /tmp/pwned-model
+          echo "trustworthy=${{ steps.run.outputs.trustworthy }}"

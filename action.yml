@@ -64,16 +64,24 @@ runs:
     - name: Audit
       id: audit
       shell: bash
+      # Same as the install step: inputs reach the script through env, so a
+      # file name or model like `$(...)` is passed as text and never run.
+      env:
+        GLASSBOX_FILE: ${{ inputs.file }}
+        GLASSBOX_BACKEND: ${{ inputs.backend }}
+        GLASSBOX_MODEL: ${{ inputs.model }}
       run: |
         set +e
-        model_arg=""
-        if [ -n "${{ inputs.model }}" ]; then model_arg="--model ${{ inputs.model }}"; fi
-        report=$(glassbox audit "${{ inputs.file }}" --backend "${{ inputs.backend }}" $model_arg --json)
+        args=(audit "$GLASSBOX_FILE" --backend "$GLASSBOX_BACKEND" --json)
+        if [ -n "$GLASSBOX_MODEL" ]; then args+=(--model "$GLASSBOX_MODEL"); fi
+        report=$(glassbox "${args[@]}")
         code=$?
+        # Random delimiter so the report's own text can't end the output early.
+        eof="GLASSBOX_EOF_$(python -c 'import secrets; print(secrets.token_hex(8))')"
         {
-          echo "report<<GLASSBOX_EOF"
+          echo "report<<$eof"
           echo "$report"
-          echo "GLASSBOX_EOF"
+          echo "$eof"
         } >> "$GITHUB_OUTPUT"
         trust=$(echo "$report" | python -c "import sys,json; print(str(json.load(sys.stdin).get('trustworthy', False)).lower())" 2>/dev/null || echo "false")
         echo "trustworthy=$trust" >> "$GITHUB_OUTPUT"
